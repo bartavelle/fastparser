@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Bytestring.Parser.Fast
+  exposed-modules:     ByteString.Parser.Fast
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , thyme

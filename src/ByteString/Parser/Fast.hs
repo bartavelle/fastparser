@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Bytestring.Parser.Fast where
+module ByteString.Parser.Fast where
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BS8
