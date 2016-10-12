@@ -21,6 +21,7 @@ library
                      , thyme
                      , vector-space
                      , lens
+                     , bytestring-lexing
   ghc-options:         -O2 -Wall -Werror
   default-language:    Haskell2010
 

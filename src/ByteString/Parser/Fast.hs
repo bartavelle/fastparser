@@ -13,6 +13,8 @@ import Data.Word
 import Data.Thyme
 import Control.Lens
 
+import qualified Data.ByteString.Lex.Fractional as L
+
 newtype Parser a = Parser { runParser :: forall r. BS.ByteString -> r -> (BS.ByteString -> a -> r) -> r }
                    deriving Functor
 
@@ -36,6 +38,12 @@ instance Monad Parser where
         let succ' input' a = runParser (k a) input' failure success
         in  runParser m input failure succ'
     {-# INLINE (>>=) #-}
+
+wlex :: (BS.ByteString -> Maybe (a, BS.ByteString)) -> Parser a
+wlex p = Parser $ \i failure success -> case p i of
+                                            Nothing -> failure
+                                            Just (a, i') -> success i' a
+{-# INLINABLE wlex #-}
 
 getInt :: BS.ByteString -> Int
 getInt = BS.foldl' (\acc n -> acc * 10 + fromIntegral (n - 0x30)) 0
@@ -85,6 +93,10 @@ hnum = BS.foldl' (\acc n -> acc * 16 + hexToNum n) 0 <$> takeWhile1 isHexa
 onum :: Num n => Parser n
 onum = BS.foldl' (\acc n -> acc * 8 + fromIntegral (n - 0x30)) 0 <$> takeWhile1 isHexa
 {-# INLINABLE onum #-}
+
+frac :: Fractional a => Parser a
+frac = wlex (L.readSigned L.readDecimal)
+{-# INLINABLE frac #-}
 
 takeN :: Int -> Parser BS.ByteString
 takeN n = Parser $ \input failure success -> if BS.length input < n
