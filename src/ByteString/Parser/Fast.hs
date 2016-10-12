@@ -49,6 +49,19 @@ isDigit :: Word8 -> Bool
 isDigit !x = x >= 0x30 && x <= 0x39
 {-# INLINE isDigit #-}
 
+isHexa :: Word8 -> Bool
+isHexa !x =  (x >= 0x30 && x <= 0x39)
+          || (x >= 0x41 && x <= 0x46)
+          || (x >= 0x61 && x <= 0x66)
+{-# INLINE isHexa #-}
+
+hexToNum :: Num n => Word8 -> n
+hexToNum x | x >= 0x30 && x <= 0x39 = fromIntegral x - 0x30
+           | x >= 0x41 && x <= 0x46 = fromIntegral x - 0x37
+           | x >= 0x61 && x <= 0x66 = fromIntegral x - 0x57
+           | otherwise              = 0
+{-# INLINABLE hexToNum #-}
+
 isUpper :: Word8 -> Bool
 isUpper !x = x >= 0x41 && x <= 0x5a
 {-# INLINE isUpper #-}
@@ -60,6 +73,18 @@ isLower !x = x >= 0x61 && x <= 0x7a
 decimal :: Parser Int
 decimal = getInt <$> takeWhile1 isDigit
 {-# INLINE decimal #-}
+
+num :: Num n => Parser n
+num = BS.foldl' (\acc n -> acc * 10 + fromIntegral (n - 0x30)) 0 <$> takeWhile1 isDigit
+{-# INLINABLE num #-}
+
+hnum :: Num n => Parser n
+hnum = BS.foldl' (\acc n -> acc * 16 + hexToNum n) 0 <$> takeWhile1 isHexa
+{-# INLINABLE hnum #-}
+
+onum :: Num n => Parser n
+onum = BS.foldl' (\acc n -> acc * 8 + fromIntegral (n - 0x30)) 0 <$> takeWhile1 isHexa
+{-# INLINABLE onum #-}
 
 takeN :: Int -> Parser BS.ByteString
 takeN n = Parser $ \input failure success -> if BS.length input < n
