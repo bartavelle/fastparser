@@ -1,5 +1,5 @@
 name:                fastparser
-version:             0.1.0
+version:             0.2.0
 synopsis:            A fast bytestring parser.
 description:         Please see README.md
 homepage:            https://github.com/bartavelle/fastparser#readme
@@ -20,7 +20,7 @@ library
                      , bytestring
                      , thyme
                      , vector-space
-                     , lens
+                     , microlens
                      , bytestring-lexing
   ghc-options:         -O2 -Wall -Werror
   default-language:    Haskell2010

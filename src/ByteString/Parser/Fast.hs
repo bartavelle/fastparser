@@ -11,7 +11,8 @@ import Data.AffineSpace ((.-^), (.+^))
 import Control.Applicative
 import Data.Word
 import Data.Thyme
-import Control.Lens
+import Data.Thyme.Time.Core
+import Lens.Micro
 
 import qualified Data.ByteString.Lex.Fractional as L
 
@@ -181,7 +182,7 @@ parseYMD = do
     !y <- decimal <* char '-'
     !m <- decimal <* char '-'
     !d <- decimal
-    return $! YearMonthDay y m d ^. from gregorian
+    return $! fromGregorian y m d
 
 parseDTime :: Parser DiffTime
 parseDTime = do
@@ -194,7 +195,7 @@ timestamp :: Parser UTCTime
 timestamp = do
     !day <- parseYMD <* char '+'
     !difftime <- parseDTime <* char '+'
-    let !tm = UTCTime day difftime ^. from utcTime
+    let !tm = mkUTCTime day difftime
     !tz <- takeWhile1 isUpper
     return $! case tz of
                   "CEST" -> tm .-^ fromSeconds (7200 :: Int)
@@ -206,7 +207,7 @@ rfc3339 = do
     !day <- parseYMD <* char 'T'
     !difftime <- parseDTime
     !o <- anyChar
-    let !tm = UTCTime day difftime ^. from utcTime
+    let !tm = mkUTCTime day difftime
         suboffset = (tm .-^)
         addoffset = (tm .+^)
         getOffset = do
@@ -221,10 +222,10 @@ rfc3339 = do
         _ -> empty
 
 parseTimestamp :: BS.ByteString -> Maybe UTCTime
-parseTimestamp txt | "%++" `BS.isPrefixOf` txt = Just $ view (from utcTime) $ UTCTime (YearMonthDay 2016 03 12 ^. from gregorian) (fromSeconds (0 :: Int))
+parseTimestamp txt | "%++" `BS.isPrefixOf` txt = Just $ mkUTCTime (fromGregorian 2016 03 12) (fromSeconds (0 :: Int))
                    | otherwise = parseOnly timestamp txt
 
-pFold :: Parser a -> Fold BS.ByteString a
+pFold :: Parser a -> SimpleFold BS.ByteString a
 pFold p = to (parseOnly p) . _Just
 
 
