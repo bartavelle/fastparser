@@ -15,13 +15,14 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     ByteString.Parser.Fast
+  exposed-modules:     ByteString.Parser.Fast, ByteString.Parser.FastError
   build-depends:       base >= 4.7 && < 5
                      , bytestring
                      , thyme
                      , vector-space
                      , microlens
                      , bytestring-lexing
+                     , containers
   ghc-options:         -O2 -Wall -Werror
   default-language:    Haskell2010
 
