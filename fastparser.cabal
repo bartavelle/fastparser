@@ -1,5 +1,5 @@
 name:                fastparser
-version:             0.2.0
+version:             0.3.0
 synopsis:            A fast bytestring parser.
 description:         Please see README.md
 homepage:            https://github.com/bartavelle/fastparser#readme

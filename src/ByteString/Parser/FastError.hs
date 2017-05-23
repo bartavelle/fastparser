@@ -196,10 +196,10 @@ dropWhile :: (Word8 -> Bool) -> Parser ()
 dropWhile prd = Parser $ \s _ success -> success (BS.dropWhile prd s) ()
 {-# INLINE dropWhile #-}
 
-parseOnly :: Parser a -> BS.ByteString -> Maybe a
-parseOnly (Parser p) s = p s (const Nothing) $ \b a -> if BS.null b
-                                                         then Just a
-                                                         else Nothing
+parseOnly :: Parser a -> BS.ByteString -> Either ParseError a
+parseOnly (Parser p) s = p s Left $ \b a -> if BS.null b
+                                              then Right a
+                                              else Left (ParseError (S.singleton (Tokens (BS.take 1 b))) mempty)
 
 remaining :: Parser BS.ByteString
 remaining = Parser $ \input _ success -> success BS.empty input
@@ -248,11 +248,11 @@ rfc3339 = do
         '-' -> addoffset <$> getOffset
         _ -> empty
 
-parseTimestamp :: BS.ByteString -> Maybe UTCTime
-parseTimestamp txt | "%++" `BS.isPrefixOf` txt = Just $ mkUTCTime (fromGregorian 2016 03 12) (fromSeconds (0 :: Int))
+parseTimestamp :: BS.ByteString -> Either ParseError UTCTime
+parseTimestamp txt | "%++" `BS.isPrefixOf` txt = Right $ mkUTCTime (fromGregorian 2016 03 12) (fromSeconds (0 :: Int))
                    | otherwise = parseOnly timestamp txt
 
 pFold :: Parser a -> SimpleFold BS.ByteString a
-pFold p = to (parseOnly p) . _Just
+pFold p = to (parseOnly p) . _Right
 
 
