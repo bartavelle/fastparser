@@ -1,6 +1,6 @@
 name:                fastparser
 version:             0.3.0
-synopsis:            A fast bytestring parser.
+synopsis:            A fast bytestring parser, with very few features.
 description:         Please see README.md
 homepage:            https://github.com/bartavelle/fastparser#readme
 license:             BSD3
