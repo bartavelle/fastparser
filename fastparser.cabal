@@ -17,12 +17,12 @@ library
   hs-source-dirs:      src
   exposed-modules:     ByteString.Parser.Fast, ByteString.Parser.FastError
   build-depends:       base >= 4.7 && < 5
-                     , bytestring
-                     , thyme
-                     , vector-space
-                     , microlens
-                     , bytestring-lexing
-                     , containers
+                     , bytestring == 0.10.*
+                     , thyme == 0.3.*
+                     , vector-space == 0.10.*
+                     , microlens == 0.4.*
+                     , bytestring-lexing == 0.5.*
+                     , containers == 0.5.*
   ghc-options:         -O2 -Wall -Werror
   default-language:    Haskell2010
 
