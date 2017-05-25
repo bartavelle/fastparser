@@ -64,7 +64,7 @@ instance Applicative Parser where
 instance Alternative Parser where
     empty = Parser (\_ failure _ -> failure mempty)
     {-# INLINE empty #-}
-    Parser a <|> Parser b = Parser $ \input failure success -> a input (const $ b input failure success) success
+    Parser a <|> Parser b = Parser $ \input failure success -> a input (\rr ->  b input (failure . mappend rr) success) success
     {-# INLINE (<|>) #-}
 
 instance Monad Parser where
@@ -75,8 +75,7 @@ instance Monad Parser where
     {-# INLINE (>>=) #-}
 
 data ErrorItem
-    = EndOfInput
-    | Tokens BS.ByteString
+    = Tokens BS.ByteString
     | Label String
     deriving (Show, Eq, Ord)
 
@@ -92,7 +91,7 @@ instance Monoid ParseError where
 
 -- | An error representing the unexpected end of input.
 ueof :: ParseError
-ueof = ParseError (S.singleton EndOfInput) mempty
+ueof = ParseError (S.singleton (Label "end of input")) mempty
 
 -- | A generic error.
 ufail :: String -- ^ The expected label.
