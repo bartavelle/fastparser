@@ -1,7 +1,46 @@
 -- | A fast parser combinators module.
---
+-- 
 -- This module is extremely bare-bones, and provides only very limited
 -- functionality.
+--
+-- Sample usage:
+-- 
+-- > module Syslog where
+-- > 
+-- > import ByteString.Parser.Fast
+-- > import qualified Data.ByteString as BS
+-- > import Data.Thyme.Clock
+-- > import Control.Applicative
+-- > 
+-- > data SyslogMsg
+-- >     = SyslogMsg
+-- >     { _syslogPrio    :: {-# UNPACK #-} !Int
+-- >     , _syslogTS      :: {-# UNPACK #-} !UTCTime
+-- >     , _syslogHost    :: !BS.ByteString
+-- >     , _syslogProgram :: !BS.ByteString
+-- >     , _syslogPID     :: !(Maybe Int)
+-- >     , _syslogData    :: !BS.ByteString
+-- >     } deriving (Show, Eq)
+-- > 
+-- > 
+-- > syslogMsg :: Parser SyslogMsg
+-- > syslogMsg = do
+-- >     char '<'
+-- >     prio <- decimal
+-- >     char '>'
+-- >     ts <- rfc3339
+-- >     char ' '
+-- >     host <- charTakeWhile1 (/= ' ')
+-- >     char ' '
+-- >     program <- charTakeWhile1 (\x -> x /= ':' && x /= '[')
+-- >     pid' <- optional (char '[' *> decimal <* char ']')
+-- >     char ':'
+-- >     dt <- remaining
+-- >     return (SyslogMsg prio ts host program pid' dt)
+-- > 
+-- > test :: BS.ByteString -> Either ParseError SyslogMsg
+-- > test = parseOnly syslogMsg
+--
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -17,7 +56,7 @@ module ByteString.Parser.Fast
   -- * Parsing characters
   anyChar, char, string, quotedString,
   -- * Various combinators
-  takeN, remaining, charTakeWhile, ByteString.Parser.Fast.takeWhile, skipWhile,
+  takeN, remaining, charTakeWhile, charTakeWhile1, ByteString.Parser.Fast.takeWhile, takeWhile1, skipWhile,
   -- * Parsing time-related values
   parseYMD, parseDTime, timestamp, rfc3339,
   -- * Interfacing with other libraries
@@ -32,6 +71,7 @@ import Data.Set (Set)
 import qualified Data.Set as S
 import Data.AffineSpace ((.-^), (.+^))
 import Control.Applicative
+import Control.Monad
 import Data.Word
 import Data.Thyme
 import Data.Thyme.Time.Core
@@ -74,6 +114,8 @@ instance Monad Parser where
         in  runParser m input failure succ'
     {-# INLINE (>>=) #-}
 
+instance MonadPlus Parser
+
 data ErrorItem
     = Tokens BS.ByteString
     | Label String
@@ -109,13 +151,15 @@ parseError un ex = ParseError (S.singleton (Tokens un)) (S.singleton (Tokens ex)
 -- it should return `Nothing` when parsing failes, or `Just` the result
 -- along with the non-consumed input.
 --
--- It works well with the bytestring-lexing library.
+-- It works well with the
+-- [bytestring-lexing](https://hackage.haskell.org/package/bytestring-lexing) library.
 wlex :: (BS.ByteString -> Maybe (a, BS.ByteString)) -> Parser a
 wlex p = Parser $ \i failure success -> case p i of
                                             Nothing -> failure mempty
                                             Just (a, i') -> success i' a
 {-# INLINABLE wlex #-}
 
+-- | Parses bytestrings as if they were representing a decimal number in ASCII.
 getInt :: BS.ByteString -> Int
 getInt = BS.foldl' (\acc n -> acc * 10 + fromIntegral (n - 0x30)) 0
 {-# INLINE getInt #-}
@@ -260,7 +304,7 @@ skipWhile prd = Parser $ \s _ success -> success (BS.dropWhile prd s) ()
 {-# INLINE skipWhile #-}
 
 -- | Runs the parser. Will return a parse error if the parser fails
--- or the input is not completely consumed.
+-- or if the input is not completely consumed.
 parseOnly :: Parser a -> BS.ByteString -> Either ParseError a
 parseOnly (Parser p) s = p s Left $ \b a -> if BS.null b
                                               then Right a
@@ -322,5 +366,3 @@ rfc3339 = do
 -- | Turns any parser into a 'SimpleFold'.
 pFold :: Parser a -> SimpleFold BS.ByteString a
 pFold p = to (parseOnly p) . _Right
-
-
