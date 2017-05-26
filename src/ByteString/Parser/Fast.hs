@@ -76,8 +76,9 @@ import Data.Word
 import Data.Thyme
 import Data.Thyme.Time.Core
 import Lens.Micro
-
+import Data.Monoid
 import qualified Data.ByteString.Lex.Fractional as L
+import Prelude
 
 -- | A parser, church encoded. The arguments to the wrapped function are:
 --
