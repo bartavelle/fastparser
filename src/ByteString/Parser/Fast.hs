@@ -48,7 +48,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module ByteString.Parser.Fast
   (
-  Parser(..), parseOnly,
+  Parser, ParserM(..), parseOnly,
   -- * Error handling
   ParseError(..), ErrorItem(..), ueof, ufail, parseError,
   -- * Parsing numerical values
@@ -78,6 +78,8 @@ import Data.Thyme.Time.Core
 import Lens.Micro
 import Data.Monoid
 import qualified Data.ByteString.Lex.Fractional as L
+import Control.Monad.Codensity (Codensity, lowerCodensity)
+import Control.Monad.Trans.Class (lift)
 import Prelude
 
 -- | A parser, church encoded. The arguments to the wrapped function are:
@@ -86,7 +88,7 @@ import Prelude
 --  * A function that handles parse errors.
 --  * A function that handles success, taking as argument the remaining
 --  input and the parser result.
-newtype Parser a
+newtype ParserM a
   = Parser {
            runParser :: forall r. BS.ByteString
                      -> (ParseError -> r)
@@ -94,7 +96,9 @@ newtype Parser a
                      -> r
   } deriving Functor
 
-instance Applicative Parser where
+type Parser = Codensity ParserM
+
+instance Applicative ParserM where
     pure a = Parser $ \b _ s -> s b a
     {-# INLINE pure #-}
     Parser pf <*> Parser px = Parser $ \input failure success ->
@@ -102,20 +106,20 @@ instance Applicative Parser where
         in  pf input failure succ'
     {-# INLINE (<*>) #-}
 
-instance Alternative Parser where
+instance Alternative ParserM where
     empty = Parser (\_ failure _ -> failure mempty)
     {-# INLINE empty #-}
     Parser a <|> Parser b = Parser $ \input failure success -> a input (\rr ->  b input (failure . mappend rr) success) success
     {-# INLINE (<|>) #-}
 
-instance Monad Parser where
+instance Monad ParserM where
     fail s = Parser $ \_ failure _ -> failure (ufail s)
     m >>= k = Parser $ \input failure success ->
         let succ' input' a = runParser (k a) input' failure success
         in  runParser m input failure succ'
     {-# INLINE (>>=) #-}
 
-instance MonadPlus Parser
+instance MonadPlus ParserM
 
 data ErrorItem
     = Tokens BS.ByteString
@@ -155,7 +159,7 @@ parseError un ex = ParseError (S.singleton (Tokens un)) (S.singleton (Tokens ex)
 -- It works well with the
 -- [bytestring-lexing](https://hackage.haskell.org/package/bytestring-lexing) library.
 wlex :: (BS.ByteString -> Maybe (a, BS.ByteString)) -> Parser a
-wlex p = Parser $ \i failure success -> case p i of
+wlex p = lift $ Parser $ \i failure success -> case p i of
                                             Nothing -> failure mempty
                                             Just (a, i') -> success i' a
 {-# INLINABLE wlex #-}
@@ -224,25 +228,27 @@ frac = wlex (L.readSigned L.readDecimal)
 
 -- | Consumes n bytes of input
 takeN :: Int -> Parser BS.ByteString
-takeN n = Parser $ \input failure success -> if BS.length input < n
-                                                 then failure ueof
-                                                 else let (a,rest) = BS.splitAt n input
-                                                      in  success rest a
+takeN n = lift $ Parser $ \input failure success
+    -> if BS.length input < n
+         then failure ueof
+         else let (a,rest) = BS.splitAt n input
+              in  success rest a
 
 -- | Parses any character.
 anyChar :: Parser Char
-anyChar = Parser $ \input failure success -> if BS.null input then failure ueof else success (BS8.tail input) (BS8.head input)
+anyChar = lift $ Parser $ \input failure success -> if BS.null input then failure ueof else success (BS8.tail input) (BS8.head input)
 
 -- | Parses a specific character.
 char :: Char -> Parser ()
-char c = Parser $ \input failure success -> if BS.null input then failure ueof else if BS8.head input == c then success (BS.tail input) () else failure (parseError (BS8.take 1 input) (BS8.singleton c))
+char c = lift $ Parser $ \input failure success -> if BS.null input then failure ueof else if BS8.head input == c then success (BS.tail input) () else failure (parseError (BS8.take 1 input) (BS8.singleton c))
 {-# INLINE char #-}
 
 -- | Parses the supplied string.
 string :: BS.ByteString -> Parser ()
-string s = Parser $ \input failure success -> if s `BS.isPrefixOf` input
-                                                  then success (BS.drop (BS.length s) input) ()
-                                                  else failure (parseError (BS.take (BS.length s) input) s)
+string s = lift $ Parser $ \input failure success
+    -> if s `BS.isPrefixOf` input
+          then success (BS.drop (BS.length s) input) ()
+          else failure (parseError (BS.take (BS.length s) input) s)
 
 -- | Parses strings between double quotes. This functions handles the
 -- following escape sequences: \\r, \\n, \\t, \\a, \\b, \\", \\\\.
@@ -278,42 +284,47 @@ scientific = finalize . BS.foldl' step (0,0) <$> takeWhile1 (\n -> isDigit n || 
 {-# INLINE scientific #-}
 
 charTakeWhile1 :: (Char -> Bool) -> Parser BS.ByteString
-charTakeWhile1 prd = Parser $ \s failure success -> case BS8.span prd s of
-                                                    (a,b) -> if BS.null a then failure (ParseError (S.singleton (Tokens (BS.take 1 s))) mempty) else success b a
+charTakeWhile1 prd = lift $ Parser $ \s failure success ->
+    case BS8.span prd s of
+      (a,b) -> if BS.null a then failure (ParseError (S.singleton (Tokens (BS.take 1 s))) mempty) else success b a
 {-# INLINE charTakeWhile1 #-}
 
 takeWhile1 :: (Word8 -> Bool) -> Parser BS.ByteString
-takeWhile1 prd = Parser $ \s failure success -> case BS.span prd s of
-                                                    (a,b) -> if BS.null a then failure (ParseError (S.singleton (Tokens (BS.take 1 s))) mempty) else success b a
+takeWhile1 prd = lift $ Parser $ \s failure success ->
+    case BS.span prd s of
+      (a,b) -> if BS.null a then failure (ParseError (S.singleton (Tokens (BS.take 1 s))) mempty) else success b a
 {-# INLINE takeWhile1 #-}
 
 -- | Consumes the input as long as the predicate remains true.
 charTakeWhile :: (Char -> Bool) -> Parser BS.ByteString
-charTakeWhile prd = Parser $ \s _ success -> case BS8.span prd s of
-                                             (a,b) -> success b a
+charTakeWhile prd = lift $ Parser $ \s _ success ->
+    case BS8.span prd s of
+      (a,b) -> success b a
 {-# INLINE charTakeWhile #-}
 
 -- | Consumes the input as long as the predicate remains true.
 takeWhile :: (Word8 -> Bool) -> Parser BS.ByteString
-takeWhile prd = Parser $ \s _ success -> case BS.span prd s of
-                                             (a,b) -> success b a
+takeWhile prd = lift $ Parser $ \s _ success ->
+  case BS.span prd s of
+    (a,b) -> success b a
 {-# INLINE takeWhile #-}
 
 -- | Discards the input as long as the predicate remains true.
 skipWhile :: (Word8 -> Bool) -> Parser ()
-skipWhile prd = Parser $ \s _ success -> success (BS.dropWhile prd s) ()
+skipWhile prd = lift $ Parser $ \s _ success -> success (BS.dropWhile prd s) ()
 {-# INLINE skipWhile #-}
 
 -- | Runs the parser. Will return a parse error if the parser fails
 -- or if the input is not completely consumed.
 parseOnly :: Parser a -> BS.ByteString -> Either ParseError a
-parseOnly (Parser p) s = p s Left $ \b a -> if BS.null b
+parseOnly prs s = case lowerCodensity prs of
+                  Parser p -> p s Left $ \b a -> if BS.null b
                                               then Right a
                                               else Left (ParseError (S.singleton (Tokens (BS.take 1 b))) mempty)
 
 -- | Parses the remaining input.
 remaining :: Parser BS.ByteString
-remaining = Parser $ \input _ success -> success BS.empty input
+remaining = lift $ Parser $ \input _ success -> success BS.empty input
 
 -- | Parses days, with format YYYY-MM-DD
 parseYMD :: Parser Day
