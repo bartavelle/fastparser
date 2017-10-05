@@ -54,7 +54,7 @@ module ByteString.Parser.Fast
   -- * Parsing numerical values
   decimal, num, hnum, onum, frac, scientific,
   -- * Parsing characters
-  anyChar, char, string, quotedString,
+  satisfy, anyChar, char, string, quotedString,
   -- * Various combinators
   takeN, remaining, charTakeWhile, charTakeWhile1, ByteString.Parser.Fast.takeWhile, takeWhile1, skipWhile,
   -- * Parsing time-related values
@@ -218,7 +218,7 @@ hnum = BS.foldl' (\acc n -> acc * 16 + hexToNum n) 0 <$> takeWhile1 isHexa
 
 -- | Parses any positives octal 'Num'.
 onum :: Num n => Parser n
-onum = BS.foldl' (\acc n -> acc * 8 + fromIntegral (n - 0x30)) 0 <$> takeWhile1 isHexa
+onum = BS.foldl' (\acc n -> acc * 8 + fromIntegral (n - 0x30)) 0 <$> takeWhile1 isDigit
 {-# INLINABLE onum #-}
 
 -- | Parses 'Fractional' numbers.
@@ -242,6 +242,16 @@ anyChar = lift $ Parser $ \input failure success -> if BS.null input then failur
 char :: Char -> Parser ()
 char c = lift $ Parser $ \input failure success -> if BS.null input then failure ueof else if BS8.head input == c then success (BS.tail input) () else failure (parseError (BS8.take 1 input) (BS8.singleton c))
 {-# INLINE char #-}
+
+-- | Parses a character satisfying a predicate
+satisfy :: (Char -> Bool) -> Parser Char
+satisfy p = lift $ Parser $ \input failure success ->
+  if BS.null input
+    then failure ueof
+    else let c = BS8.head input
+         in  if p c
+               then success (BS.tail input) c
+               else failure (parseError (BS8.take 1 input) (BS8.singleton c))
 
 -- | Parses the supplied string.
 string :: BS.ByteString -> Parser ()

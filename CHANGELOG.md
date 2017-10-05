@@ -1,3 +1,7 @@
+v0.3.1
+
+ * Added the satisfy function
+
 v0.3.0.1
 
  * Parser is now wrapped in Codensity, as the performance impact is minimal
