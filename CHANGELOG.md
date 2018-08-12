@@ -1,3 +1,7 @@
+v0.3.1.1
+
+  * Merged [Typetetris](https://github.com/typetetris) PR, making the package compatible with GHC 8.4+
+
 v0.3.1
 
  * Added the satisfy function
