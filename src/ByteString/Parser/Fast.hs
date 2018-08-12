@@ -76,7 +76,7 @@ import Data.Word
 import Data.Thyme
 import Data.Thyme.Time.Core
 import Lens.Micro
-import Data.Monoid
+import Data.Semigroup
 import qualified Data.ByteString.Lex.Fractional as L
 import Control.Monad.Codensity (Codensity, lowerCodensity)
 import Control.Monad.Trans.Class (lift)
@@ -132,9 +132,12 @@ data ParseError
   , errorExpected   :: !(Set ErrorItem)
   } deriving (Show, Eq)
 
+instance Semigroup ParseError where
+  (<>) (ParseError u1 e1) (ParseError u2 e2) = ParseError (mappend u1 u2) (mappend e1 e2)
+
 instance Monoid ParseError where
   mempty = ParseError mempty mempty
-  mappend (ParseError u1 e1) (ParseError u2 e2) = ParseError (mappend u1 u2) (mappend e1 e2)
+  mappend = (<>)
 
 -- | An error representing the unexpected end of input.
 ueof :: ParseError
