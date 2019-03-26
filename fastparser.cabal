@@ -12,7 +12,7 @@ category:            Parsing
 build-type:          Simple
 extra-source-files:  CHANGELOG.md, README.md
 cabal-version:       >=1.10
-Tested-With:         GHC == 7.10.2, GHC == 8.0.2, GHC == 8.2.1
+Tested-With:         GHC == 7.10.2, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.4
 
 library
   hs-source-dirs:      src
@@ -23,7 +23,7 @@ library
                      , vector-space      >= 0.10 && < 1
                      , microlens         == 0.4.*
                      , bytestring-lexing == 0.5.*
-                     , containers        == 0.5.*
+                     , containers        >= 0.5 && < 0.7
                      , kan-extensions    == 5.*
                      , transformers      >= 0.4
   ghc-options:         -O2 -Wall
