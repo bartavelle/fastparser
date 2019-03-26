@@ -1,3 +1,7 @@
+v0.3.1.2
+
+  * Push bounds for the container package
+
 v0.3.1.1
 
   * Merged [Typetetris](https://github.com/typetetris) PR, making the package compatible with GHC 8.4+
