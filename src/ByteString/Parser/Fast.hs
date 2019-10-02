@@ -1,17 +1,17 @@
 -- | A fast parser combinators module.
--- 
+--
 -- This module is extremely bare-bones, and provides only very limited
 -- functionality.
 --
 -- Sample usage:
--- 
+--
 -- > module Syslog where
--- > 
+-- >
 -- > import ByteString.Parser.Fast
 -- > import qualified Data.ByteString as BS
 -- > import Data.Thyme.Clock
 -- > import Control.Applicative
--- > 
+-- >
 -- > data SyslogMsg
 -- >     = SyslogMsg
 -- >     { _syslogPrio    :: {-# UNPACK #-} !Int
@@ -21,8 +21,8 @@
 -- >     , _syslogPID     :: !(Maybe Int)
 -- >     , _syslogData    :: !BS.ByteString
 -- >     } deriving (Show, Eq)
--- > 
--- > 
+-- >
+-- >
 -- > syslogMsg :: Parser SyslogMsg
 -- > syslogMsg = do
 -- >     char '<'
@@ -37,15 +37,15 @@
 -- >     char ':'
 -- >     dt <- remaining
 -- >     return (SyslogMsg prio ts host program pid' dt)
--- > 
+-- >
 -- > test :: BS.ByteString -> Either ParseError SyslogMsg
 -- > test = parseOnly syslogMsg
 --
+{-# LANGUAGE BangPatterns               #-}
+{-# LANGUAGE DeriveFunctor              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE RankNTypes                 #-}
 module ByteString.Parser.Fast
   (
   Parser, ParserM(..), parseOnly,
@@ -65,22 +65,22 @@ module ByteString.Parser.Fast
   isLower, getOctal, getInt
   ) where
 
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as BS8
-import Data.Set (Set)
-import qualified Data.Set as S
-import Data.AffineSpace ((.-^), (.+^))
-import Control.Applicative
-import Control.Monad
-import Data.Word
-import Data.Thyme
-import Data.Thyme.Time.Core
-import Lens.Micro
-import Data.Semigroup
+import           Control.Applicative
+import           Control.Monad
+import           Control.Monad.Codensity        (Codensity, lowerCodensity)
+import           Control.Monad.Trans.Class      (lift)
+import           Data.AffineSpace               ((.+^), (.-^))
+import qualified Data.ByteString                as BS
+import qualified Data.ByteString.Char8          as BS8
 import qualified Data.ByteString.Lex.Fractional as L
-import Control.Monad.Codensity (Codensity, lowerCodensity)
-import Control.Monad.Trans.Class (lift)
-import Prelude
+import           Data.Semigroup
+import           Data.Set                       (Set)
+import qualified Data.Set                       as S
+import           Data.Thyme
+import           Data.Thyme.Time.Core
+import           Data.Word
+import           Lens.Micro
+import           Prelude
 
 -- | A parser, church encoded. The arguments to the wrapped function are:
 --
@@ -163,7 +163,7 @@ parseError un ex = ParseError (S.singleton (Tokens un)) (S.singleton (Tokens ex)
 -- [bytestring-lexing](https://hackage.haskell.org/package/bytestring-lexing) library.
 wlex :: (BS.ByteString -> Maybe (a, BS.ByteString)) -> Parser a
 wlex p = lift $ Parser $ \i failure success -> case p i of
-                                            Nothing -> failure mempty
+                                            Nothing      -> failure mempty
                                             Just (a, i') -> success i' a
 {-# INLINABLE wlex #-}
 
@@ -365,8 +365,8 @@ timestamp = do
     !tz <- takeWhile1 isUpper
     return $! case tz of
                   "CEST" -> tm .-^ fromSeconds (7200 :: Int)
-                  "CET" -> tm .-^ fromSeconds (3600 :: Int)
-                  _ -> tm
+                  "CET"  -> tm .-^ fromSeconds (3600 :: Int)
+                  _      -> tm
 
 -- | Parses RFC3339 compatible timestamps to UTCTime.
 rfc3339 :: Parser UTCTime
@@ -386,7 +386,7 @@ rfc3339 = do
         'Z' -> return tm
         '+' -> suboffset <$> getOffset
         '-' -> addoffset <$> getOffset
-        _ -> empty
+        _   -> empty
 
 -- | Turns any parser into a 'SimpleFold'.
 pFold :: Parser a -> SimpleFold BS.ByteString a
