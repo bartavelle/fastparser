@@ -54,9 +54,9 @@ module ByteString.Parser.Fast
   -- * Parsing numerical values
   decimal, num, hnum, onum, frac, scientific,
   -- * Parsing characters
-  satisfy, anyChar, char, string, quotedString,
+  satisfy, anyChar, char, anyWord8, word8, string, quotedString,
   -- * Various combinators
-  takeN, remaining, charTakeWhile, charTakeWhile1, ByteString.Parser.Fast.takeWhile, takeWhile1, skipWhile,
+  takeN, dropN, remaining, charTakeWhile, charTakeWhile1, ByteString.Parser.Fast.takeWhile, takeWhile1, skipWhile,
   -- * Parsing time-related values
   parseYMD, parseDTime, timestamp, rfc3339,
   -- * Interfacing with other libraries
@@ -237,14 +237,32 @@ takeN n = lift $ Parser $ \input failure success
          else let (a,rest) = BS.splitAt n input
               in  success rest a
 
+-- | Drops n bytes of input
+dropN :: Int -> Parser ()
+dropN n = lift $ Parser $ \input failure success
+    -> if BS.length input < n
+         then failure ueof
+         else success (BS.drop n input) ()
+
 -- | Parses any character.
 anyChar :: Parser Char
 anyChar = lift $ Parser $ \input failure success -> if BS.null input then failure ueof else success (BS8.tail input) (BS8.head input)
+{-# INLINE anyChar #-}
 
 -- | Parses a specific character.
 char :: Char -> Parser ()
 char c = lift $ Parser $ \input failure success -> if BS.null input then failure ueof else if BS8.head input == c then success (BS.tail input) () else failure (parseError (BS8.take 1 input) (BS8.singleton c))
 {-# INLINE char #-}
+
+-- | Parses any byte.
+anyWord8 :: Parser Char
+anyWord8 = lift $ Parser $ \input failure success -> if BS.null input then failure ueof else success (BS8.tail input) (BS8.head input)
+{-# INLINE anyWord8 #-}
+
+-- | Parses a specific byte.
+word8 :: Word8 -> Parser ()
+word8 c = lift $ Parser $ \input failure success -> if BS.null input then failure ueof else if BS.head input == c then success (BS.tail input) () else failure (parseError (BS.take 1 input) (BS.singleton c))
+{-# INLINE word8 #-}
 
 -- | Parses a character satisfying a predicate
 satisfy :: (Char -> Bool) -> Parser Char

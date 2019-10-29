@@ -1,3 +1,7 @@
+v0.3.2
+
+  * New functions: `dropN`, `anyWord8`, `word8`.
+ 
 v0.3.1.2
 
   * Push bounds for the container package
