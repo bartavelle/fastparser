@@ -1,3 +1,7 @@
+v0.4.0
+
+  * Major bump because of embarrassing bug in `anyWord8` type signature ...
+
 v0.3.2
 
   * New functions: `dropN`, `anyWord8`, `word8`.

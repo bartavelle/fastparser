@@ -255,8 +255,8 @@ char c = lift $ Parser $ \input failure success -> if BS.null input then failure
 {-# INLINE char #-}
 
 -- | Parses any byte.
-anyWord8 :: Parser Char
-anyWord8 = lift $ Parser $ \input failure success -> if BS.null input then failure ueof else success (BS8.tail input) (BS8.head input)
+anyWord8 :: Parser Word8
+anyWord8 = lift $ Parser $ \input failure success -> if BS.null input then failure ueof else success (BS.tail input) (BS.head input)
 {-# INLINE anyWord8 #-}
 
 -- | Parses a specific byte.
