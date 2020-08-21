@@ -113,11 +113,13 @@ instance Alternative ParserM where
     {-# INLINE (<|>) #-}
 
 instance Monad ParserM where
-    fail s = Parser $ \_ failure _ -> failure (ufail s)
     m >>= k = Parser $ \input failure success ->
         let succ' input' a = runParser (k a) input' failure success
         in  runParser m input failure succ'
     {-# INLINE (>>=) #-}
+
+instance MonadFail ParserM where
+    fail s = Parser $ \_ failure _ -> failure (ufail s)
 
 instance MonadPlus ParserM
 

@@ -1,5 +1,5 @@
 name:                fastparser
-version:             0.4.0
+version:             0.5.0
 synopsis:            A fast, but bare bones, bytestring parser combinators library.
 description:         Please see README.md
 homepage:            https://github.com/bartavelle/fastparser#readme
@@ -12,12 +12,12 @@ category:            Parsing
 build-type:          Simple
 extra-source-files:  CHANGELOG.md, README.md
 cabal-version:       >=1.10
-Tested-With:         GHC == 7.10.2, GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.4, GHC == 8.6.4
+Tested-With:         GHC == 8.8.4, GHC == 8.10.2
 
 library
   hs-source-dirs:      src
   exposed-modules:     ByteString.Parser.Fast
-  build-depends:       base              >= 4.7 && < 5
+  build-depends:       base              >= 4.13 && < 5
                      , bytestring
                      , thyme             == 0.3.*
                      , vector-space      >= 0.10 && < 1
@@ -39,7 +39,7 @@ benchmark timestamps
   type:                exitcode-stdio-1.0
   main-is:             timestamps.hs
   hs-source-dirs:      bench
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       base >= 4.13 && < 5
                      , criterion
                      , fastparser
                      , bytestring
