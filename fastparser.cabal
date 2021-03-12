@@ -40,7 +40,6 @@ benchmark timestamps
   main-is:             timestamps.hs
   hs-source-dirs:      bench
   build-depends:       base >= 4.13 && < 5
-                     , criterion
                      , fastparser
                      , bytestring
   ghc-options:         -O2 -Wall
