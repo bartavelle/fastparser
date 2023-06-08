@@ -1,5 +1,5 @@
 name:                fastparser
-version:             0.5.0
+version:             0.6.0
 synopsis:            A fast, but bare bones, bytestring parser combinators library.
 description:         Please see README.md
 homepage:            https://github.com/bartavelle/fastparser#readme
@@ -19,7 +19,7 @@ library
   exposed-modules:     ByteString.Parser.Fast
   build-depends:       base              >= 4.13 && < 5
                      , bytestring
-                     , thyme             == 0.3.*
+                     , thyme             >= 0.4 && < 0.5
                      , vector-space      >= 0.10 && < 1
                      , microlens         == 0.4.*
                      , bytestring-lexing == 0.5.*

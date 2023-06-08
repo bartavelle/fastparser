@@ -77,7 +77,6 @@ import           Data.Semigroup
 import           Data.Set                       (Set)
 import qualified Data.Set                       as S
 import           Data.Thyme
-import           Data.Thyme.Time.Core
 import           Data.Word
 import           Lens.Micro
 import           Prelude
@@ -381,7 +380,7 @@ timestamp :: Parser UTCTime
 timestamp = do
     !day <- parseYMD <* char '+'
     !difftime <- parseDTime <* char '+'
-    let !tm = mkUTCTime day difftime
+    let !tm = UTCTime day difftime
     !tz <- takeWhile1 isUpper
     return $! case tz of
                   "CEST" -> tm .-^ fromSeconds (7200 :: Int)
@@ -394,7 +393,7 @@ rfc3339 = do
     !day <- parseYMD <* char 'T'
     !difftime <- parseDTime
     !o <- anyChar
-    let !tm = mkUTCTime day difftime
+    let !tm = UTCTime day difftime
         suboffset = (tm .-^)
         addoffset = (tm .+^)
         getOffset = do
